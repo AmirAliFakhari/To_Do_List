@@ -19,3 +19,8 @@ class TaskLimitExceededError(ToDoListError):
 class ValidationError(ToDoListError):
     """Raised for general validation errors, like incorrect length."""
     pass
+
+
+class ProjectNotFoundError(ToDoListError):
+    """Raised when a project is not found by its name."""
+    pass
