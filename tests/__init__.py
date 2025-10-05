@@ -1,80 +1,147 @@
-# main.py
+# src/todolist/services.py
 
 from datetime import datetime
-from src.todolist.services import ToDoService
-from src.todolist.exceptions import ToDoListError
+from typing import Optional
 
-def main():
-    """Main function to run a simple test of the ToDoService."""
-    service = ToDoService(max_projects=2, max_tasks_per_project=1)
+from .models import Project, Task, Status
+from .exceptions import (
+    ProjectNameExistsError,
+    ProjectLimitExceededError,
+    ValidationError,
+    ProjectNotFoundError,
+    TaskLimitExceededError,
+    TaskNotFoundError,
+)
 
-    # --- Project Creation Tests ---
-    print("--- Trying to create valid projects ---")
-    p1, p2 = None, None
-    try:
-        p1 = service.create_project("Personal", "Tasks for home.")
-        print(f"✅ SUCCESS: Created project '{p1.name}' with ID {p1.id}")
-        p2 = service.create_project("Work", "Tasks for my job.")
-        print(f"✅ SUCCESS: Created project '{p2.name}' with ID {p2.id}")
-    except ToDoListError as e:
-        print(f"❌ ERROR: {e}")
+class ToDoService:
+    def __init__(self, max_projects: int = 10, max_tasks_per_project: int = 20):
+        self._projects: list[Project] = []
+        self._max_projects = max_projects
+        self._max_tasks_per_project = max_tasks_per_project
+        self._project_id_counter = 1
+        self._task_id_counter = 1
 
-    print("\n--- Trying to create a duplicate project ---")
-    try:
-        service.create_project("Work", "This should fail.")
-    except ToDoListError as e:
-        print(f"✅ SUCCESS: Caught expected error: {e}")
+    # --- Project Methods ---
+    def create_project(self, name: str, description: str) -> Project:
+        if any(p.name == name for p in self._projects):
+            raise ProjectNameExistsError(f"Project with name '{name}' already exists.")
+        if len(self._projects) >= self._max_projects:
+            raise ProjectLimitExceededError(f"Cannot create more than {self._max_projects} projects.")
+        if len(name) > 30:
+            raise ValidationError("Project name cannot exceed 30 characters.")
+        if len(description) > 150:
+            raise ValidationError("Project description cannot exceed 150 characters.")
+        
+        new_project = Project(id=self._project_id_counter, name=name, description=description)
+        self._projects.append(new_project)
+        self._project_id_counter += 1
+        return new_project
 
-    print("\n--- Trying to exceed the project limit ---")
-    try:
-        service.create_project("University", "This should also fail.")
-    except ToDoListError as e:
-        print(f"✅ SUCCESS: Caught expected error: {e}")
+    def edit_project(
+        self,
+        project_id: int,
+        new_name: Optional[str] = None,
+        new_description: Optional[str] = None,
+    ) -> Project:
+        project_to_edit = next((p for p in self._projects if p.id == project_id), None)
+        if not project_to_edit:
+            raise ProjectNotFoundError(f"Project with ID '{project_id}' not found.")
 
-    # --- Task Addition Tests ---
-    print("\n--- Trying to add a valid task ---")
-    if p2:
-        try:
-            task1 = service.add_task_to_project(
-                project_id=p2.id,  # Use the project's ID
-                task_title="Finish report",
-                task_description="Complete the Q3 financial report.",
+        if new_name is not None:
+            if len(new_name) > 30:
+                raise ValidationError("Project name cannot exceed 30 characters.")
+            if any(p.name == new_name and p.id != project_id for p in self._projects):
+                raise ProjectNameExistsError(f"Another project with name '{new_name}' already exists.")
+            project_to_edit.name = new_name
+
+        if new_description is not None:
+            if len(new_description) > 150:
+                raise ValidationError("Project description cannot exceed 150 characters.")
+            project_to_edit.description = new_description
+            
+        return project_to_edit
+
+    def get_all_projects(self) -> list[Project]:
+        return self._projects
+
+    # --- Task Methods ---
+    def add_task_to_project(
+        self,
+        project_id: int,
+        task_title: str,
+        task_description: str,
+        deadline: Optional[datetime] = None,
+    ) -> Task:
+        project = next((p for p in self._projects if p.id == project_id), None)
+        if project is None:
+            raise ProjectNotFoundError(f"Project with ID '{project_id}' not found.")
+        if len(project.tasks) >= self._max_tasks_per_project:
+            raise TaskLimitExceededError(
+                f"Cannot add more than {self._max_tasks_per_project} tasks to '{project.name}'."
             )
-            print(f"✅ SUCCESS: Added task '{task1.title}' with ID {task1.id} to project '{p2.name}'.")
-        except ToDoListError as e:
-            print(f"❌ ERROR: {e}")
-
-    print("\n--- Trying to exceed the task limit ---")
-    if p2:
-        try:
-            service.add_task_to_project(
-                project_id=p2.id, # Use the project's ID
-                task_title="Plan meeting",
-                task_description="This should fail."
-            )
-        except ToDoListError as e:
-            print(f"✅ SUCCESS: Caught expected error: {e}")
-
-    print("\n--- Trying to add a task to a non-existent project ---")
-    try:
-        service.add_task_to_project(
-            project_id=999, # Use a non-existent ID
-            task_title="Read chapter 5",
-            task_description="This should also fail."
+        if len(task_title) > 30:
+            raise ValidationError("Task title cannot exceed 30 characters.")
+        if len(task_description) > 150:
+            raise ValidationError("Task description cannot exceed 150 characters.")
+        new_task = Task(
+            id=self._task_id_counter,
+            title=task_title,
+            description=task_description,
+            deadline=deadline,
         )
-    except ToDoListError as e:
-        print(f"✅ SUCCESS: Caught expected error: {e}")
+        project.tasks.append(new_task)
+        self._task_id_counter += 1
+        return new_task
 
-    # --- Final State Print ---
-    print("\n--- Current Projects and Tasks ---")
-    for project in service.get_all_projects():
-        print(f"- Project (ID {project.id}): {project.name}")
-        if project.tasks:
+    def change_task_status(self, task_id: int, new_status: Status) -> Task:
+        task_to_update = None
+        for project in self._projects:
             for task in project.tasks:
-                print(f"  - Task (ID {task.id}): {task.title} (Status: {task.status})")
-        else:
-            print("  (No tasks yet)")
+                if task.id == task_id:
+                    task_to_update = task
+                    break
+            if task_to_update:
+                break
+        if not task_to_update:
+            raise TaskNotFoundError(f"Task with ID '{task_id}' not found.")
+        task_to_update.status = new_status
+        return task_to_update
 
+    def edit_project(
+        self,
+        project_id: int,
+        new_name: Optional[str] = None,
+        new_description: Optional[str] = None,
+    ) -> Project:
+        project_to_edit = next((p for p in self._projects if p.id == project_id), None)
+        if not project_to_edit:
+            raise ProjectNotFoundError(f"Project with ID '{project_id}' not found.")
 
-if __name__ == "__main__":
-    main()
+        if new_name is not None:
+            if len(new_name) > 30:
+                raise ValidationError("Project name cannot exceed 30 characters.")
+            if any(p.name == new_name and p.id != project_id for p in self._projects):
+                raise ProjectNameExistsError(f"Another project with name '{new_name}' already exists.")
+            project_to_edit.name = new_name
+
+        if new_description is not None:
+            if len(new_description) > 150:
+                raise ValidationError("Project description cannot exceed 150 characters.")
+            project_to_edit.description = new_description
+            
+        return project_to_edit
+
+    def delete_task(self, task_id: int) -> None:
+        parent_project = None
+        task_to_delete = None
+        for project in self._projects:
+            for task in project.tasks:
+                if task.id == task_id:
+                    parent_project = project
+                    task_to_delete = task
+                    break
+            if parent_project:
+                break
+        if not task_to_delete:
+            raise TaskNotFoundError(f"Task with ID '{task_id}' not found.")
+        parent_project.tasks.remove(task_to_delete)
