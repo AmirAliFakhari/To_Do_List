@@ -129,7 +129,6 @@ class ToDoService:
         task_to_update.status = new_status
         return task_to_update
 
-    # --- متد جدید ---
     def edit_task(
         self,
         task_id: int,
@@ -170,3 +169,25 @@ class ToDoService:
             task_to_edit.deadline = new_deadline
             
         return task_to_edit
+    
+    
+    def delete_task(self, task_id: int) -> None:
+        """
+        Finds a task by its ID and deletes it from its project.
+        """
+        parent_project = None
+        task_to_delete = None
+
+        for project in self._projects:
+            for task in project.tasks:
+                if task.id == task_id:
+                    parent_project = project
+                    task_to_delete = task
+                    break
+            if parent_project:
+                break
+        
+        if not task_to_delete:
+            raise TaskNotFoundError(f"Task with ID '{task_id}' not found.")
+
+        parent_project.tasks.remove(task_to_delete)
