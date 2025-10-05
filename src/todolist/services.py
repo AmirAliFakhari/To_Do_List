@@ -110,3 +110,63 @@ class ToDoService:
         # although in this case, Literal handles it. We'll proceed with the update.
         task_to_update.status = new_status
         return task_to_update
+    
+    
+    def change_task_status(self, task_id: int, new_status: Status) -> Task:
+        """Finds a task by its ID and updates its status."""
+        task_to_update = None
+        for project in self._projects:
+            for task in project.tasks:
+                if task.id == task_id:
+                    task_to_update = task
+                    break
+            if task_to_update:
+                break
+        
+        if not task_to_update:
+            raise TaskNotFoundError(f"Task with ID '{task_id}' not found.")
+            
+        task_to_update.status = new_status
+        return task_to_update
+
+    # --- متد جدید ---
+    def edit_task(
+        self,
+        task_id: int,
+        new_title: Optional[str] = None,
+        new_description: Optional[str] = None,
+        new_deadline: Optional[datetime] = None,
+    ) -> Task:
+        """
+        Finds a task by its ID and updates its details.
+        Only non-None fields will be updated.
+        """
+        task_to_edit = None
+        for project in self._projects:
+            for task in project.tasks:
+                if task.id == task_id:
+                    task_to_edit = task
+                    break
+            if task_to_edit:
+                break
+
+        if not task_to_edit:
+            raise TaskNotFoundError(f"Task with ID '{task_id}' not found.")
+
+        # Update title if a new one is provided
+        if new_title is not None:
+            if len(new_title) > 30:
+                raise ValidationError("Task title cannot exceed 30 characters.")
+            task_to_edit.title = new_title
+
+        # Update description if a new one is provided
+        if new_description is not None:
+            if len(new_description) > 150:
+                raise ValidationError("Task description cannot exceed 150 characters.")
+            task_to_edit.description = new_description
+        
+        # Update deadline if a new one is provided
+        if new_deadline is not None:
+            task_to_edit.deadline = new_deadline
+            
+        return task_to_edit
