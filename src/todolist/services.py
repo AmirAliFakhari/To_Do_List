@@ -18,7 +18,7 @@ class ToDoService:
     Contains the main business logic for the ToDoList application.
     It manages projects and tasks in memory.
     """
-    def __init__(self, max_projects: int = 10, max_tasks_per_project: int = 20):
+    def __init__(self, max_projects: int, max_tasks_per_project: int):
         self._projects: list[Project] = []
         self._max_projects = max_projects
         self._max_tasks_per_project = max_tasks_per_project
@@ -29,12 +29,9 @@ class ToDoService:
     def create_project(self, name: str, description: str) -> Project:
         """
         Creates a new project.
-        :param name: The name of the project (max 30 chars).
-        :param description: The description of the project (max 150 chars).
+        :param name: The name of the project (max 30 characters).
+        :param description: The description of the project (max 150 characters).
         :return: The newly created Project object.
-        :raises ProjectNameExistsError: if a project with the same name already exists.
-        :raises ProjectLimitExceededError: if the maximum number of projects is reached.
-        :raises ValidationError: if name or description exceed length limits.
         """
         if any(p.name == name for p in self._projects):
             raise ProjectNameExistsError(f"Project with name '{name}' already exists.")
@@ -58,13 +55,7 @@ class ToDoService:
     ) -> Project:
         """
         Edits an existing project's name and/or description.
-        :param project_id: The ID of the project to edit.
-        :param new_name: The new name for the project.
-        :param new_description: The new description for the project.
         :return: The updated Project object.
-        :raises ProjectNotFoundError: if the project is not found.
-        :raises ProjectNameExistsError: if the new name conflicts with an existing project.
-        :raises ValidationError: if new name or description exceed length limits.
         """
         project_to_edit = next((p for p in self._projects if p.id == project_id), None)
         if not project_to_edit:
@@ -87,8 +78,6 @@ class ToDoService:
     def delete_project(self, project_id: int) -> None:
         """
         Finds a project by ID and deletes it, including all its tasks.
-        :param project_id: The ID of the project to delete.
-        :raises ProjectNotFoundError: if the project is not found.
         """
         project_to_delete = next((p for p in self._projects if p.id == project_id), None)
         if not project_to_delete:
@@ -110,14 +99,9 @@ class ToDoService:
     ) -> Task:
         """
         Adds a new task to a specific project.
-        :param project_id: The ID of the project to add the task to.
-        :param task_title: The title of the task (max 30 chars).
-        :param task_description: The description of the task (max 150 chars).
-        :param deadline: An optional deadline for the task.
+        :param task_title: The title of the task (max 30 characters).
+        :param task_description: The description of the task (max 150 characters).
         :return: The newly created Task object.
-        :raises ProjectNotFoundError: if the project is not found.
-        :raises TaskLimitExceededError: if the project has reached its task limit.
-        :raises ValidationError: if title or description exceed length limits.
         """
         project = next((p for p in self._projects if p.id == project_id), None)
         if project is None:
@@ -151,14 +135,7 @@ class ToDoService:
     ) -> Task:
         """
         Edits an existing task.
-        :param task_id: The ID of the task to edit.
-        :param new_title: The new title for the task.
-        :param new_description: The new description for the task.
-        :param new_status: The new status for the task ('todo', 'doing', 'done').
-        :param new_deadline: The new deadline for the task.
         :return: The updated Task object.
-        :raises TaskNotFoundError: if the task is not found.
-        :raises ValidationError: if new title or description exceed length limits.
         """
         task_to_edit = None
         for project in self._projects:
@@ -186,15 +163,13 @@ class ToDoService:
             task_to_edit.status = new_status
             
         if new_deadline is not None:
-            task_to_edit.deadline = new_deadline
-            
+             task_to_edit.deadline = new_deadline
+        
         return task_to_edit
 
     def delete_task(self, task_id: int) -> None:
         """
         Deletes a task by its ID.
-        :param task_id: The ID of the task to delete.
-        :raises TaskNotFoundError: if the task is not found.
         """
         parent_project = None
         task_to_delete = None
