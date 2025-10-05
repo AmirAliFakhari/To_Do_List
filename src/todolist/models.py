@@ -1,4 +1,4 @@
-# todolist/models.py
+# src/todolist/models.py
 
 from dataclasses import dataclass, field
 from typing import Literal, Optional
@@ -13,9 +13,8 @@ class Task:
     title: str
     id: int
     description: str
-    status: Status = "todo"  # Default status is 'todo' [cite: 86]
+    status: Status = "todo"  # Default status is 'todo'
     deadline: Optional[datetime] = None
-    # We will add an ID later when we need to uniquely identify tasks.
 
 @dataclass
 class Project:
@@ -24,4 +23,3 @@ class Project:
     id: int
     description: str
     tasks: list[Task] = field(default_factory=list)
-    # We will add an ID later as well.
