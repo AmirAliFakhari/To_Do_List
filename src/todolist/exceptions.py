@@ -1,4 +1,4 @@
-# todolist/exceptions.py
+# src/todolist/exceptions.py
 
 class ToDoListError(Exception):
     """Base exception class for this application."""
@@ -20,7 +20,10 @@ class ValidationError(ToDoListError):
     """Raised for general validation errors, like incorrect length."""
     pass
 
-
 class ProjectNotFoundError(ToDoListError):
-    """Raised when a project is not found by its name."""
+    """Raised when a project is not found by its name or ID."""
+    pass
+
+class TaskNotFoundError(ToDoListError):
+    """Raised when a task is not found by its ID."""
     pass

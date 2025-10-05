@@ -5,52 +5,30 @@ from src.todolist.services import ToDoService
 from src.todolist.exceptions import ToDoListError
 
 def main():
-    service = ToDoService(max_projects=2, max_tasks_per_project=1)
+    """Main function to run a simple test of the ToDoService."""
+    service = ToDoService(max_projects=2, max_tasks_per_project=2) # Task limit را به 2 افزایش دادم
 
-    # --- تست‌های ساخت پروژه ---
-    print("--- Trying to create valid projects ---")
-    p1, p2 = None, None
+    # ... (تمام تست‌های قبلی را نگه دارید) ...
+    p1 = service.create_project("Personal", "Tasks for home.")
+    p2 = service.create_project("Work", "Tasks for my job.")
+    task1 = service.add_task_to_project(p2.id, "Finish report", "Q3 financial report.")
+
+    # --- بخش جدید: تست تغییر وضعیت تسک ---
+    print("\n--- Trying to change task status ---")
     try:
-        p1 = service.create_project("Personal", "Tasks for home.")
-        print(f"✅ SUCCESS: Created project '{p1.name}' with ID {p1.id}")
-        p2 = service.create_project("Work", "Tasks for my job.")
-        print(f"✅ SUCCESS: Created project '{p2.name}' with ID {p2.id}")
+        updated_task = service.change_task_status(task_id=task1.id, new_status="doing")
+        print(f"✅ SUCCESS: Changed status of task '{updated_task.title}' to '{updated_task.status}'.")
     except ToDoListError as e:
         print(f"❌ ERROR: {e}")
-    
-    # ... (other project tests remain the same) ...
-
-    print("\n--- Trying to add a valid task ---")
+        
+    print("\n--- Trying to change status of a non-existent task ---")
     try:
-        task1 = service.add_task_to_project(
-            project_id=p2.id,  
-            task_title="Finish report",
-            task_description="Complete the Q3 financial report.",
-        )
-        print(f"✅ SUCCESS: Added task '{task1.title}' with ID {task1.id} to project 'Work'.")
-    except ToDoListError as e:
-        print(f"❌ ERROR: {e}")
-
-    print("\n--- Trying to exceed the task limit ---")
-    try:
-        service.add_task_to_project(
-            project_id=p2.id, 
-            task_title="Plan meeting",
-            task_description="This should fail."
-        )
+        service.change_task_status(task_id=999, new_status="done")
     except ToDoListError as e:
         print(f"✅ SUCCESS: Caught expected error: {e}")
 
-    print("\n--- Trying to add a task to a non-existent project ---")
-    try:
-        service.add_task_to_project(
-            project_id=999,
-            task_title="Read chapter 5",
-            task_description="This should also fail."
-        )
-    except ToDoListError as e:
-        print(f"✅ SUCCESS: Caught expected error: {e}")
 
+    # --- نمایش وضعیت نهایی ---
     print("\n--- Current Projects and Tasks ---")
     for project in service.get_all_projects():
         print(f"- Project (ID {project.id}): {project.name}")

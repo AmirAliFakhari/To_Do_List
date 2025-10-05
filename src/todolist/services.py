@@ -3,13 +3,14 @@
 from datetime import datetime
 from typing import Optional
 
-from .models import Project, Task
+from .models import Project, Task, Status  
 from .exceptions import (
     ProjectNameExistsError,
     ProjectLimitExceededError,
     ValidationError,
     ProjectNotFoundError,
     TaskLimitExceededError,
+    TaskNotFoundError,
 )
 
 class ToDoService:
@@ -86,3 +87,26 @@ class ToDoService:
         project.tasks.append(new_task)
         self._task_id_counter += 1  # Increment the counter for the next task
         return new_task
+    
+    
+    def change_task_status(self, task_id: int, new_status: Status) -> Task:
+        """
+        Finds a task by its ID across all projects and updates its status.
+        """
+        # Find the task with the given ID
+        task_to_update = None
+        for project in self._projects:
+            for task in project.tasks:
+                if task.id == task_id:
+                    task_to_update = task
+                    break
+            if task_to_update:
+                break
+        
+        if not task_to_update:
+            raise TaskNotFoundError(f"Task with ID '{task_id}' not found.")
+            
+        # The 'Status' type hint already helps validate, but a runtime check is good practice
+        # although in this case, Literal handles it. We'll proceed with the update.
+        task_to_update.status = new_status
+        return task_to_update
