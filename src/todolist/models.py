@@ -11,6 +11,7 @@ Status = Literal["todo", "doing", "done"]
 class Task:
     """Represents a single task within a project."""
     title: str
+    id: int
     description: str
     status: Status = "todo"  # Default status is 'todo' [cite: 86]
     deadline: Optional[datetime] = None
@@ -20,6 +21,7 @@ class Task:
 class Project:
     """Represents a project that contains a collection of tasks."""
     name: str
+    id: int
     description: str
     tasks: list[Task] = field(default_factory=list)
     # We will add an ID later as well.
