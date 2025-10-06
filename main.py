@@ -1,6 +1,10 @@
 # main.py
+import os
+from datetime import datetime
+from dotenv import load_dotenv
 
 from src.todolist.services import ToDoService
+from src.todolist.models import Project, Task
 from src.todolist.exceptions import ToDoListError
 
 def print_menu():
@@ -18,91 +22,166 @@ def print_menu():
 
 def main():
     """Main function to run the CLI application."""
-    service = ToDoService(max_projects=5, max_tasks_per_project=10)
+    load_dotenv()
+    
+    try:
+        max_projects: int = int(os.getenv("MAX_PROJECTS", 10))
+        max_tasks: int = int(os.getenv("MAX_TASKS_PER_PROJECT", 20))
+    except (ValueError, TypeError):
+        print("Warning: Invalid .env config. Using default values.")
+        max_projects = 10
+        max_tasks = 20
+
+    service = ToDoService(max_projects=max_projects, max_tasks_per_project=max_tasks)
+    print(f"Service initialized. Max projects: {max_projects}, "
+          f"Max tasks per project: {max_tasks}")
 
     while True:
         print_menu()
-        choice = input("Enter your choice: ")
+        choice: str = input("Enter your choice: ").strip()
 
         try:
             if choice == '1':
-                name = input("Enter project name: ")
-                description = input("Enter project description: ")
-                project = service.create_project(name, description)
-                print(f"✅ SUCCESS: Project '{project.name}' created with ID {project.id}.")
+                name: str = input("Enter project name: ").strip()
+                if not name:
+                    print("❌ ERROR: Project name cannot be empty.")
+                    continue
+                
+                description: str = input("Enter project description: ").strip()
+                if not description:
+                    print("❌ ERROR: Project description cannot be empty.")
+                    continue
+                    
+                project: Project = service.create_project(name, description)
+                print(f"✅ SUCCESS: Project '{project.name}' created "
+                      f"with ID {project.id}.")
 
             elif choice == '2':
-                projects = service.get_all_projects()
+                projects: list[Project] = service.get_all_projects()
                 if not projects:
                     print("No projects found.")
                 else:
                     print("\n--- All Projects ---")
-                    for p in projects:
-                        print(f"- ID: {p.id}, Name: {p.name}, Description: {p.description}, Tasks: {len(p.tasks)}")
+                    for project in projects:
+                        print(f"- ID: {project.id}, Name: {project.name}, "
+                              f"Tasks: {len(project.tasks)}")
+                        print(f"  Description: {project.description}")
 
             elif choice == '3':
-                project_id = int(input("Enter the ID of the project to edit: "))
-                new_name = input("Enter new name (leave blank to keep current): ")
-                new_description = input("Enter new description (leave blank to keep current): ")
+                project_id_str: str = input("Enter project ID to edit: ").strip()
+                project_id: int = int(project_id_str)
                 
-                # Use None if the input is empty
-                p_name = new_name if new_name else None
-                p_desc = new_description if new_description else None
+                new_name: str = input("New name (leave blank to keep): ").strip()
+                new_description: str = input("New description (leave blank to keep): ").strip()
+                
+                if not new_name and not new_description:
+                    print("💡 INFO: No changes were made.")
+                    continue
 
-                updated_project = service.edit_project(project_id, new_name=p_name, new_description=p_desc)
+                updated_project: Project = service.edit_project(
+                    project_id, 
+                    new_name=new_name or None, 
+                    new_description=new_description or None
+                )
                 print(f"✅ SUCCESS: Project {updated_project.id} updated.")
 
             elif choice == '4':
-                project_id = int(input("Enter the ID of the project to delete: "))
+                project_id_str: str = input("Enter project ID to delete: ").strip()
+                project_id: int = int(project_id_str)
                 service.delete_project(project_id)
                 print(f"✅ SUCCESS: Project with ID {project_id} deleted.")
 
             elif choice == '5':
-                project_id = int(input("Enter the project ID to add the task to: "))
-                title = input("Enter task title: ")
-                description = input("Enter task description: ")
-                task = service.add_task_to_project(project_id, title, description)
+                project_id_str: str = input("Enter project ID to add task to: ").strip()
+                project_id: int = int(project_id_str)
+                
+                title: str = input("Enter task title: ").strip()
+                if not title:
+                    print("❌ ERROR: Task title cannot be empty.")
+                    continue
+
+                description: str = input("Enter task description: ").strip()
+                if not description:
+                    print("❌ ERROR: Task description cannot be empty.")
+                    continue
+
+                deadline_str: str = input("Deadline (YYYY-MM-DD) [optional]: ").strip()
+                
+                deadline: Optional[datetime] = None
+                if deadline_str:
+                    try:
+                        deadline = datetime.strptime(deadline_str, "%Y-%m-%d")
+                    except ValueError:
+                        print("❌ ERROR: Invalid date format. Please use YYYY-MM-DD.")
+                        continue
+
+                task: Task = service.add_task_to_project(
+                    project_id, title, description, deadline
+                )
                 print(f"✅ SUCCESS: Task '{task.title}' added to project ID {project_id}.")
 
             elif choice == '6':
-                task_id = int(input("Enter the ID of the task to edit: "))
-                new_title = input("Enter new title (leave blank to keep current): ")
-                new_desc = input("Enter new description (leave blank to keep current): ")
-                new_status = input("Enter new status (todo/doing/done) (leave blank to keep current): ")
-                
-                t_title = new_title if new_title else None
-                t_desc = new_desc if new_desc else None
-                t_status = new_status if new_status else None
-                
-                if t_status and t_status not in ['todo', 'doing', 'done']:
-                    print("❌ ERROR: Invalid status. Must be one of 'todo', 'doing', 'done'.")
+                task_id_str: str = input("Enter task ID to edit: ").strip()
+                task_id: int = int(task_id_str)
+
+                new_title: str = input("New title (leave blank to keep): ").strip()
+                new_desc: str = input("New description (leave blank to keep): ").strip()
+                new_status: str = input("New status (todo/doing/done) [blank to keep]: ").strip()
+                new_deadline_str: str = input("New deadline (YYYY-MM-DD) [blank to keep]: ").strip()
+
+                if not any([new_title, new_desc, new_status, new_deadline_str]):
+                    print("💡 INFO: No changes were made.")
                     continue
                 
-                task = service.edit_task(task_id, new_title=t_title, new_description=t_desc, new_status=t_status)
+                if new_status and new_status not in ['todo', 'doing', 'done']:
+                    print("❌ ERROR: Invalid status. Must be 'todo', 'doing', or 'done'.")
+                    continue
+                
+                t_deadline: Optional[datetime] = None
+                if new_deadline_str:
+                    try:
+                        t_deadline = datetime.strptime(new_deadline_str, "%Y-%m-%d")
+                    except ValueError:
+                        print("❌ ERROR: Invalid date format. Please use YYYY-MM-DD.")
+                        continue
+
+                task: Task = service.edit_task(
+                    task_id, 
+                    new_title=new_title or None, 
+                    new_description=new_desc or None, 
+                    new_status=new_status or None, 
+                    new_deadline=t_deadline
+                )
                 print(f"✅ SUCCESS: Task {task.id} updated.")
             
             elif choice == '7':
-                task_id = int(input("Enter the ID of the task to delete: "))
+                task_id_str: str = input("Enter task ID to delete: ").strip()
+                task_id: int = int(task_id_str)
                 service.delete_task(task_id)
                 print(f"✅ SUCCESS: Task with ID {task_id} deleted.")
 
             elif choice == '8':
-                project_id = int(input("Enter the project ID to list tasks for: "))
-                projects = service.get_all_projects()
-                project = next((p for p in projects if p.id == project_id), None)
+                project_id_str: str = input("Enter project ID to list tasks for: ").strip()
+                project_id: int = int(project_id_str)
+                
+                project: Optional[Project] = next(
+                    (p for p in service.get_all_projects() if p.id == project_id), None
+                )
+                
                 if not project:
                     print(f"❌ ERROR: Project with ID {project_id} not found.")
                 elif not project.tasks:
                     print(f"No tasks found for project '{project.name}'.")
                 else:
                     print(f"\n--- Tasks for Project: {project.name} ---")
-                    for t in project.tasks:
-                        print(f"- ID: {t.id}, Title: {t.title}, Status: {t.status}")
+                    for task in project.tasks:
+                        deadline_info = task.deadline.strftime('%Y-%m-%d') if task.deadline else "No deadline"
+                        print(f"- ID: {task.id}, Title: {task.title}, "
+                              f"Status: {task.status}, Deadline: {deadline_info}")
 
             elif choice == '0':
                 print("Exiting application. Goodbye!")
                 break
-
             else:
                 print("❌ ERROR: Invalid choice. Please try again.")
 

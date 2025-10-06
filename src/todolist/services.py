@@ -28,13 +28,13 @@ class ToDoService:
     # --- Project Methods ---
     def create_project(self, name: str, description: str) -> Project:
         """
-        Creates a new project.
-        :param name: The name of the project (max 30 characters).
+        Creates a new project after validating inputs.
+        :param name: The name of the project (max 30 characters, case-insensitive unique).
         :param description: The description of the project (max 150 characters).
         :return: The newly created Project object.
         """
-        if any(p.name == name for p in self._projects):
-            raise ProjectNameExistsError(f"Project with name '{name}' already exists.")
+        if any(p.name.lower() == name.lower() for p in self._projects):
+            raise ProjectNameExistsError(f"Project with name '{name}' already exists (case-insensitive).")
         if len(self._projects) >= self._max_projects:
             raise ProjectLimitExceededError(f"Cannot create more than {self._max_projects} projects.")
         if len(name) > 30:
@@ -64,8 +64,8 @@ class ToDoService:
         if new_name is not None:
             if len(new_name) > 30:
                 raise ValidationError("Project name cannot exceed 30 characters.")
-            if any(p.name == new_name and p.id != project_id for p in self._projects):
-                raise ProjectNameExistsError(f"Another project with name '{new_name}' already exists.")
+            if any(p.name.lower() == new_name.lower() and p.id != project_id for p in self._projects):
+                raise ProjectNameExistsError(f"Another project with name '{new_name}' already exists (case-insensitive).")
             project_to_edit.name = new_name
 
         if new_description is not None:
@@ -77,12 +77,11 @@ class ToDoService:
 
     def delete_project(self, project_id: int) -> None:
         """
-        Finds a project by ID and deletes it, including all its tasks.
+        Finds a project by ID and deletes it, including all its tasks (Cascade Delete).
         """
         project_to_delete = next((p for p in self._projects if p.id == project_id), None)
         if not project_to_delete:
             raise ProjectNotFoundError(f"Project with ID '{project_id}' not found.")
-        
         self._projects.remove(project_to_delete)
 
     def get_all_projects(self) -> list[Project]:
@@ -134,7 +133,7 @@ class ToDoService:
         new_deadline: Optional[datetime] = None,
     ) -> Task:
         """
-        Edits an existing task.
+        Edits an existing task's attributes.
         :return: The updated Task object.
         """
         task_to_edit = None
@@ -169,7 +168,7 @@ class ToDoService:
 
     def delete_task(self, task_id: int) -> None:
         """
-        Deletes a task by its ID.
+        Deletes a task by its ID from its parent project.
         """
         parent_project = None
         task_to_delete = None
@@ -183,5 +182,4 @@ class ToDoService:
                 break
         if not task_to_delete:
             raise TaskNotFoundError(f"Task with ID '{task_id}' not found.")
-        
         parent_project.tasks.remove(task_to_delete)
