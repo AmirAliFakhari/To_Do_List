@@ -27,3 +27,7 @@ class ProjectNotFoundError(ToDoListError):
 class TaskNotFoundError(ToDoListError):
     """Raised when a task is not found by its ID."""
     pass
+
+class InvalidDeadlineError(ValidationError):
+    """Raised when the provided deadline is in the past."""
+    pass

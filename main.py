@@ -1,4 +1,3 @@
-# main.py
 import os
 from datetime import datetime
 from dotenv import load_dotenv
@@ -21,14 +20,14 @@ def print_menu():
     print("0. Exit")
 
 def main():
-    """Main function to run the CLI application."""
+    """Main function to run the robust CLI application."""
     load_dotenv()
     
     try:
         max_projects: int = int(os.getenv("MAX_PROJECTS", 10))
         max_tasks: int = int(os.getenv("MAX_TASKS_PER_PROJECT", 20))
     except (ValueError, TypeError):
-        print("Warning: Invalid .env config. Using default values.")
+        print("⚠️ Warning: Invalid .env config. Using default values (10 projects, 20 tasks).")
         max_projects = 10
         max_tasks = 20
 
@@ -42,19 +41,15 @@ def main():
 
         try:
             if choice == '1':
-                name: str = input("Enter project name: ").strip()
-                if not name:
-                    print("❌ ERROR: Project name cannot be empty.")
-                    continue
-                
+                while True:
+                    name: str = input("Enter project name: ").strip()
+                    if name:
+                        break
+                    print("❌ ERROR: Project name cannot be empty. Please try again.")
+
                 description: str = input("Enter project description: ").strip()
-                if not description:
-                    print("❌ ERROR: Project description cannot be empty.")
-                    continue
-                    
                 project: Project = service.create_project(name, description)
-                print(f"✅ SUCCESS: Project '{project.name}' created "
-                      f"with ID {project.id}.")
+                print(f"✅ SUCCESS: Project '{project.name}' created with ID {project.id}.")
 
             elif choice == '2':
                 projects: list[Project] = service.get_all_projects()
