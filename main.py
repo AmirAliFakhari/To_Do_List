@@ -10,8 +10,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "src"
 
 from todolist.exceptions import ToDoListError
 from todolist.models import Project, Task
-from todolist.services import ToDoService
+from todolist.project_service import ProjectService
 from todolist.storage import InMemoryStorage
+from todolist.task_service import TaskService
 
 
 def print_menu():
@@ -37,16 +38,12 @@ def main():
         max_tasks: int = int(os.getenv("MAX_TASKS_PER_PROJECT", 20))
     except (ValueError, TypeError):
         print("⚠️ Warning: Invalid .env config. Using default values.")
-        max_projects = 10
-        max_tasks = 20
+        max_projects, max_tasks = 10, 20
 
-    # --- DI: Create the storage and inject it into the service ---
+    # --- DI: Create storage and inject it into the new services ---
     storage = InMemoryStorage()
-    service = ToDoService(
-        storage=storage,
-        max_projects=max_projects,
-        max_tasks_per_project=max_tasks,
-    )
+    project_service = ProjectService(storage=storage, max_projects=max_projects)
+    task_service = TaskService(storage=storage, max_tasks_per_project=max_tasks)
 
     print(
         f"Service initialized. Max projects: {max_projects}, "
@@ -66,14 +63,14 @@ def main():
                     print("❌ ERROR: Project name cannot be empty. Please try again.")
 
                 description: str = input("Enter project description: ").strip()
-                project: Project = service.create_project(name, description)
+                project: Project = project_service.create_project(name, description)
                 print(
                     f"✅ SUCCESS: Project '{project.name}' created "
                     f"with ID {project.id}."
                 )
 
             elif choice == "2":
-                projects: List[Project] = service.get_all_projects()
+                projects: List[Project] = project_service.get_all_projects()
                 if not projects:
                     print("No projects found.")
                 else:
@@ -98,7 +95,7 @@ def main():
                     print("💡 INFO: No changes were made.")
                     continue
 
-                updated_project: Project = service.edit_project(
+                updated_project: Project = project_service.edit_project(
                     project_id,
                     new_name=new_name or None,
                     new_description=new_description or None,
@@ -108,7 +105,7 @@ def main():
             elif choice == "4":
                 project_id_str: str = input("Enter project ID to delete: ").strip()
                 project_id: int = int(project_id_str)
-                service.delete_project(project_id)
+                project_service.delete_project(project_id)
                 print(f"✅ SUCCESS: Project with ID {project_id} deleted.")
 
             elif choice == "5":
@@ -139,7 +136,7 @@ def main():
                         print("❌ ERROR: Invalid date format. Please use YYYY-MM-DD.")
                         continue
 
-                task: Task = service.add_task_to_project(
+                task: Task = task_service.add_task_to_project(
                     project_id, title, description, deadline
                 )
                 print(
@@ -177,7 +174,7 @@ def main():
                         print("❌ ERROR: Invalid date format. Please use YYYY-MM-DD.")
                         continue
 
-                task: Task = service.edit_task(
+                task: Task = task_service.edit_task(
                     task_id,
                     new_title=new_title or None,
                     new_description=new_desc or None,
@@ -189,7 +186,7 @@ def main():
             elif choice == "7":
                 task_id_str: str = input("Enter task ID to delete: ").strip()
                 task_id: int = int(task_id_str)
-                service.delete_task(task_id)
+                task_service.delete_task(task_id)
                 print(f"✅ SUCCESS: Task with ID {task_id} deleted.")
 
             elif choice == "8":
@@ -198,7 +195,9 @@ def main():
                 ).strip()
                 project_id: int = int(project_id_str)
 
-                project: Optional[Project] = service.find_project_by_id(project_id)
+                project: Optional[Project] = project_service.find_project_by_id(
+                    project_id
+                )
 
                 if not project:
                     print(f"❌ ERROR: Project with ID {project_id} not found.")
