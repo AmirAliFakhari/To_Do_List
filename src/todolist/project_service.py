@@ -1,6 +1,6 @@
 # src/todolist/project_service.py
 
-from typing import List, Optional
+from typing import List, Optional, Sequence
 
 from .exceptions import (
     ProjectLimitExceededError,
@@ -27,7 +27,16 @@ class ProjectService:
             raise ValidationError("Project description cannot exceed 150 words.")
 
     def create_project(self, name: str, description: str) -> Project:
-        """Creates a new project."""
+        """
+        Creates a new project.
+
+        :param name: The name for the new project.
+        :param description: The description for the new project.
+        :return: The newly created Project object.
+        :raises ProjectNameExistsError: If a project with the same name already exists.
+        :raises ProjectLimitExceededError: If the maximum number of projects is reached.
+        :raises ValidationError: If validation for name or description fails.
+        """
         projects = self._storage.projects
         if any(p.name.lower() == name.lower() for p in projects):
             raise ProjectNameExistsError(
@@ -47,7 +56,12 @@ class ProjectService:
         return new_project
 
     def find_project_by_id(self, project_id: int) -> Optional[Project]:
-        """Finds a project by its ID."""
+        """
+        Finds a project by its unique ID.
+
+        :param project_id: The ID of the project to find.
+        :return: A Project object if found, otherwise None.
+        """
         return next(
             (p for p in self._storage.projects if p.id == project_id), None
         )
@@ -58,7 +72,16 @@ class ProjectService:
         new_name: Optional[str] = None,
         new_description: Optional[str] = None,
     ) -> Project:
-        """Edits an existing project."""
+        """
+        Edits an existing project's attributes.
+
+        :param project_id: The ID of the project to edit.
+        :param new_name: The optional new name for the project.
+        :param new_description: The optional new description for the project.
+        :return: The updated Project object.
+        :raises ProjectNotFoundError: If the project with the given ID is not found.
+        :raises ProjectNameExistsError: If the new name conflicts with another project.
+        """
         project_to_edit = self.find_project_by_id(project_id)
         if not project_to_edit:
             raise ProjectNotFoundError(f"Project with ID '{project_id}' not found.")
@@ -81,12 +104,21 @@ class ProjectService:
         return project_to_edit
 
     def delete_project(self, project_id: int) -> None:
-        """Deletes a project by its ID."""
+        """
+        Deletes a project by its ID.
+
+        :param project_id: The ID of the project to delete.
+        :raises ProjectNotFoundError: If the project with the given ID is not found.
+        """
         project_to_delete = self.find_project_by_id(project_id)
         if not project_to_delete:
             raise ProjectNotFoundError(f"Project with ID '{project_id}' not found.")
         self._storage.projects.remove(project_to_delete)
 
-    def get_all_projects(self) -> List[Project]:
-        """Returns a list of all projects."""
-        return self._storage.projects
+    def get_all_projects(self) -> Sequence[Project]:
+        """
+        Returns a sequence of all projects, sorted by ID.
+
+        :return: A sorted sequence of all Project objects.
+        """
+        return sorted(self._storage.projects, key=lambda p: p.id)

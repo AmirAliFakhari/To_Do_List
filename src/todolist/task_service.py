@@ -45,7 +45,18 @@ class TaskService:
         task_description: str,
         deadline: Optional[datetime] = None,
     ) -> Task:
-        """Adds a new task to a project."""
+        """
+        Adds a new task to a specific project.
+
+        :param project_id: The ID of the project to add the task to.
+        :param task_title: The title of the new task.
+        :param task_description: The description of the new task.
+        :param deadline: The optional deadline for the task.
+        :return: The newly created Task object.
+        :raises ProjectNotFoundError: If the project is not found.
+        :raises TaskLimitExceededError: If the project has reached its task limit.
+        :raises InvalidDeadlineError: If the deadline is in the past.
+        """
         project = next(
             (p for p in self._storage.projects if p.id == project_id), None
         )
@@ -69,7 +80,12 @@ class TaskService:
         return new_task
 
     def find_task_by_id(self, task_id: int) -> Optional[Task]:
-        """Finds a task by its ID across all projects."""
+        """
+        Finds a task by its unique ID across all projects.
+
+        :param task_id: The ID of the task to find.
+        :return: A Task object if found, otherwise None.
+        """
         for project in self._storage.projects:
             for task in project.tasks:
                 if task.id == task_id:
@@ -84,7 +100,17 @@ class TaskService:
         new_status: Optional[Status] = None,
         new_deadline: Optional[datetime] = None,
     ) -> Task:
-        """Edits an existing task."""
+        """
+        Edits an existing task's attributes.
+
+        :param task_id: The ID of the task to edit.
+        :param new_title: The optional new title.
+        :param new_description: The optional new description.
+        :param new_status: The optional new status.
+        :param new_deadline: The optional new deadline.
+        :return: The updated Task object.
+        :raises TaskNotFoundError: If the task is not found.
+        """
         task_to_edit = self.find_task_by_id(task_id)
         if not task_to_edit:
             raise TaskNotFoundError(f"Task with ID '{task_id}' not found.")
@@ -107,7 +133,12 @@ class TaskService:
         return task_to_edit
 
     def delete_task(self, task_id: int) -> None:
-        """Deletes a task by its ID."""
+        """
+        Deletes a task by its ID.
+
+        :param task_id: The ID of the task to delete.
+        :raises TaskNotFoundError: If the task is not found.
+        """
         for project in self._storage.projects:
             task_to_delete = next(
                 (t for t in project.tasks if t.id == task_id), None

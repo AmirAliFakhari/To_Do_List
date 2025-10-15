@@ -205,7 +205,9 @@ def main():
                     print(f"No tasks found for project '{project.name}'.")
                 else:
                     print(f"\n--- Tasks for Project: {project.name} ---")
-                    for task in project.tasks:
+                    # FIX: Sort tasks by ID for consistent display
+                    sorted_tasks = sorted(project.tasks, key=lambda t: t.id)
+                    for task in sorted_tasks:
                         deadline_info = (
                             task.deadline.strftime("%Y-%m-%d")
                             if task.deadline
