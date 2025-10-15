@@ -31,3 +31,4 @@ class TaskNotFoundError(ToDoListError):
 class InvalidDeadlineError(ValidationError):
     """Raised when the provided deadline is in the past."""
     pass
+
