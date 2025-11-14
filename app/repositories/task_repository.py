@@ -4,10 +4,13 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
+from datetime import datetime
+from sqlalchemy import update
+
 from app.models import Task, Project
 from app.models.task import Status  # Import Status from its correct file
 
-    
+
 class TaskRepository:
     def __init__(self, session: Session):
         """
@@ -87,3 +90,33 @@ class TaskRepository:
         """
         self.session.delete(task)
         self.session.commit()
+        
+        
+    def close_overdue_tasks(self) -> int:
+        """
+        Finds tasks that are not 'done' and whose deadline has passed.
+        Sets their status to 'done' and records the 'closed_at' time.
+        Returns the number of tasks closed.
+        """
+        now = datetime.now().astimezone()
+        
+        # Define the update statement
+        statement = (
+            update(Task)
+            .where(
+                Task.status != "done",
+                Task.deadline < now,
+                Task.closed_at == None  # Only close them once
+            )
+            .values(
+                status="done",
+                closed_at=now
+            )
+        )
+        
+        # Execute the update
+        result = self.session.execute(statement)
+        self.session.commit()
+        
+        # result.rowcount gives us the number of affected rows
+        return result.rowcount
