@@ -3,15 +3,15 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from .exceptions import (
+from ..exceptions.base import (
     InvalidDeadlineError,
     ProjectNotFoundError,
     TaskLimitExceededError,
     TaskNotFoundError,
     ValidationError,
 )
-from .models import Project, Status, Task
-from .storage import InMemoryStorage
+from ..models.models import Project, Status, Task
+from ..todolist.storage import InMemoryStorage
 
 
 class TaskService:
