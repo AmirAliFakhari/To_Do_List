@@ -17,6 +17,7 @@ dependencies = [
 
 [tool.poetry.scripts]
 start = "app.main:main"
+schedule = "app.commands.scheduler:start_scheduler"
 
 [tool.poetry]
 packages = [{include = "app"}]
