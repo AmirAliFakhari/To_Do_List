@@ -32,6 +32,12 @@ class Task(Base):
         init=False
     )
     
+    closed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), 
+        nullable=True, 
+        init=False
+    )
+    
     project_id: Mapped[int] = mapped_column(Integer, ForeignKey("projects.id"), init=False)
 
     project: Mapped["Project"] = relationship(
