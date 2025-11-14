@@ -1,16 +1,15 @@
-# app/services/task_service.py
 from datetime import datetime
 from typing import Optional, Sequence
 
-from app.models import Project, Status, Task
-from app.repositories import ProjectRepository, TaskRepository
+from app.models import Project, Task
+from app.models.task import Status
+from app.repositories import ProjectRepository, TaskRepository  # <-- This is the key line
 from app.exceptions.base import InvalidDeadlineError, ValidationError
 from app.exceptions.service_exceptions import (
     ProjectNotFoundError,
     TaskLimitExceededError,
     TaskNotFoundError,
 )
-
 class TaskService:
     """Handles business logic related to tasks."""
 

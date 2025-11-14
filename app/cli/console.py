@@ -4,8 +4,9 @@ import sys
 from datetime import datetime
 from typing import List, Optional, Sequence
 
-from app.models import Project, Task, Status
-from app.services import ProjectService, TaskService
+from app.models import Project, Task
+from app.models.task import Status
+from app.services import ProjectService, TaskService  # <-- This is the missing line
 from app.exceptions.base import ToDoListError
 
 # Add the project root to the Python path

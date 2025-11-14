@@ -4,8 +4,10 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
-from app.models import Task, Project, Status
+from app.models import Task, Project
+from app.models.task import Status  # Import Status from its correct file
 
+    
 class TaskRepository:
     def __init__(self, session: Session):
         """

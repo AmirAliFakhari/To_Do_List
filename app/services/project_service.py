@@ -3,11 +3,11 @@ from typing import Optional, Sequence
 
 from app.repositories import ProjectRepository
 from app.models import Project
+from app.exceptions.base import ValidationError  # Import from the correct file
 from app.exceptions.service_exceptions import (
     ProjectLimitExceededError,
     ProjectNameExistsError,
     ProjectNotFoundError,
-    ValidationError,
 )
 
 class ProjectService:
