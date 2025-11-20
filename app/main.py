@@ -1,19 +1,49 @@
 # app/main.py
 import os
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
+from fastapi import FastAPI
 
-# Load .env variables (like DATABASE_URL and MAX_PROJECTS)
+# Load .env variables
 load_dotenv()
 
+from app.api.routers import api_router
 from app.db.session import get_session
 from app.repositories import ProjectRepository, TaskRepository
 from app.services import ProjectService, TaskService
 from app.cli.console import CommandLineApp
 
+# --- FastAPI Application Setup (Phase 3) ---
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Lifecycle events for the application.
+    This replaces the old 'on_event' startup/shutdown handlers.
+    """
+    # Startup: You can check DB connection here if needed
+    print("🚀 ToDoList API is starting up...")
+    yield
+    # Shutdown: Cleanup code goes here
+    print("🛑 ToDoList API is shutting down...")
+
+app = FastAPI(
+    title="ToDoList API",
+    description="Phase 3: RESTful API for ToDoList Project using FastAPI",
+    version="3.0.0",
+    lifespan=lifespan
+)
+
+# Include the main API router
+app.include_router(api_router, prefix="/api")
+
+
+# --- Legacy CLI Entry Point (Deprecated) ---
+
 def main():
     """
-    Main entry point for the application.
-    Sets up dependencies and runs the CLI.
+    Main entry point for the CLI application.
+    WARNING: This interface is deprecated. Use 'uvicorn app.main:app' instead.
     """
     
     # Load configurations
@@ -24,16 +54,15 @@ def main():
         print("⚠️ Warning: Invalid .env config. Using default values.")
         max_projects, max_tasks = 10, 20
 
-    # 1. Create a single database session for this run
-    # (For a web app, we'd do this per-request)
+    # Create a database session for the CLI run
     session = get_session()
 
     try:
-        # 2. Initialize Repositories
+        # Initialize Repositories
         project_repo = ProjectRepository(session=session)
         task_repo = TaskRepository(session=session)
 
-        # 3. Initialize Services (injecting repositories)
+        # Initialize Services
         project_service = ProjectService(
             project_repo=project_repo, 
             max_projects=max_projects
@@ -44,13 +73,12 @@ def main():
             max_tasks_per_project=max_tasks,
         )
 
-        # 4. Initialize CLI (injecting services)
+        # Initialize CLI
         cli_app = CommandLineApp(
             project_service=project_service, 
             task_service=task_service
         )
 
-        # 5. Run the application
         print(
             f"Service initialized. Max projects: {max_projects}, "
             f"Max tasks per project: {max_tasks}. Using Database."
@@ -60,7 +88,6 @@ def main():
     except Exception as e:
         print(f"An unexpected error occurred during setup: {e}")
     finally:
-        # 6. Always close the session
         session.close()
         print("Database session closed.")
 
