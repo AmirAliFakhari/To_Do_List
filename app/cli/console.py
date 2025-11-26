@@ -2,11 +2,11 @@
 import os
 import sys
 from datetime import datetime
-from typing import List, Optional, Sequence
+from typing import Optional, Sequence
 
 from app.models import Project, Task
 from app.models.task import Status
-from app.services import ProjectService, TaskService  # <-- This is the missing line
+from app.services import ProjectService, TaskService
 from app.exceptions.base import ToDoListError
 
 # Add the project root to the Python path
@@ -19,6 +19,16 @@ class CommandLineApp:
         """
         self.project_service = project_service
         self.task_service = task_service
+        
+        # --- PHASE 3: Deprecation Notice ---
+        self._print_deprecation_warning()
+
+    def _print_deprecation_warning(self):
+        """Prints a warning that the CLI is deprecated."""
+        print("\n" + "!" * 80)
+        print("WARNING: The CLI interface is deprecated and will be removed in future versions.")
+        print("Please consider using the FastAPI Web Interface (Phase 3).")
+        print("!" * 80 + "\n")
 
     def _print_menu(self):
         """Prints the main menu options."""

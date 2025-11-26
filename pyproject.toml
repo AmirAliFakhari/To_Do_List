@@ -12,12 +12,15 @@ dependencies = [
     "sqlalchemy (>=2.0.0)",    
     "alembic (>=1.13.0)",      
     "psycopg2-binary (>=2.9.0)",      
-    "schedule (>=1.2.2,<2.0.0)" 
+    "schedule (>=1.2.2,<2.0.0)",
+    "fastapi (>=0.110.0)",   
+    "uvicorn (>=0.27.0)"     
 ]
 
 [tool.poetry.scripts]
 start = "app.main:main"
 schedule = "app.commands.scheduler:start_scheduler"
+# در مراحل بعد شاید اسکریپتی برای اجرای وب سرور اضافه کنیم
 
 [tool.poetry]
 packages = [{include = "app"}]
